@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EduChain - Learn, Earn, Certify</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.10.0/web3.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>EduChain</h1>
+        <p>Decentralized Learning Platform - Learn, Earn SkillTokens, Get NFT Certificates</p>
+    </header>
+
+    <div class="nav">
+        <button onclick="showPanel('home')">Home</button>
+        <button onclick="showPanel('admin')">Admin</button>
+        <button onclick="showPanel('student')">Student</button>
+    </div>
+
+    <div class="container">
+        <div class="wallet-info">
+            <div id="walletStatus">
+                <span id="walletInfo">Not Connected</span>
+                <button onclick="connectWallet()" style="margin-left: 1rem;">Connect MetaMask</button>
+            </div>
+        </div>
+
+        <div id="homePanel" class="panel">
+        <h2 class="hero-title">Welcome to EduChain</h2>
+        <br />
+        <p class="description">
+            EduChain is a blockchain-powered learning platform where students can learn from expert-created courses, earn SkillTokens for correct answers, receive NFT certificates upon completion, and use tokens to unlock premium content. Educators can create comprehensive courses, add learning materials and quizzes, track student progress, and set course pricing.
+        </p>
+    </div>
+
+        <div id="adminPanel" class="panel hidden">
+            <div class="panel">
+                <h3>Create New Course</h3>
+                <div class="grid grid-2">
+                    <input type="text" id="courseName" placeholder="Course Name" required />
+                    <input type="text" id="courseCategory" placeholder="Category (e.g., Programming, Math)" required />
+                    <select id="courseDifficulty" required>
+                        <option value="">Select Difficulty</option>
+                        <option value="1">Easy (5 tokens per question)</option>
+                        <option value="2">Medium (10 tokens per question)</option>
+                        <option value="3">Hard (15 tokens per question)</option>
+                    </select>
+                    <input type="number" id="coursePrice" placeholder="Price in Tokens (0 = Free)" min="0" />
+                    <input type="number" id="requiredCorrect" placeholder="Correct Answers to Pass" min="1" required />
+                </div>
+                <textarea id="courseDescription" placeholder="Course Description & Learning Materials" rows="4" required></textarea>
+                <button class="btn-primary" onclick="createCourse()">Create Course</button>
+                <div id="createStatus"></div>
+            </div>
+
+            <div class="panel">
+                <h3>Add Questions</h3>
+                <select id="questionCourseSelect" required>
+                    <option value="">Select Course</option>
+                </select>
+                <textarea id="questionText" placeholder="Question Text" rows="3" required></textarea>
+                <div class="grid grid-2">
+                    <input type="text" id="option1" placeholder="Option 1" required />
+                    <input type="text" id="option2" placeholder="Option 2" required />
+                    <input type="text" id="option3" placeholder="Option 3" />
+                    <input type="text" id="option4" placeholder="Option 4" />
+                </div>
+                <select id="correctAnswer" required>
+                    <option value="">Select Correct Answer</option>
+                    <option value="0">Option 1</option>
+                    <option value="1">Option 2</option>
+                    <option value="2">Option 3</option>
+                    <option value="3">Option 4</option>
+                </select>
+                <textarea id="answerExplanation" placeholder="Explanation for the correct answer" rows="2"></textarea>
+                <button class="btn-success" onclick="addQuestion()">Add Question</button>
+                <div id="questionStatus"></div>
+            </div>
+
+            <div class="panel">
+                <h3>Course Statistics</h3>
+                <select id="courseStatsSelect" onchange="showCourseStats()">
+                    <option value="">Select a course to view statistics</option>
+                </select>
+                <div id="courseStatsDisplay"></div>
+            </div>
+        </div>
+
+        <div id="studentPanel" class="panel hidden">
+            <div class="panel">
+                <h3>Wallet Info</h3>
+                <div class="grid grid-3">
+                    <div class="stat-card">
+                        <div class="stat-number" id="skillTokens">0</div>
+                        <div>SkillTokens Earned</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="nftCertificates">0</div>
+                        <div>NFT Certificates</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="coursesCompleted">0</div>
+                        <div>Courses Completed</div>
+                    </div>
+                </div>
+                <button class="btn-secondary" onclick="refreshWalletInfo()">Refresh</button>
+            </div>
+
+            <div class="panel">
+                <h3>📚 Available Courses</h3>
+                <button class="btn-primary" onclick="loadCourses()">Load Courses</button>
+                <div id="coursesContainer">No courses loaded yet.</div>
+            </div>
+        </div>
+
+        <div id="coursePanel" class="panel hidden">
+            <button onclick="showPanel('student')" class="btn-secondary">← Back to Dashboard</button>
+            
+            <div id="courseHeader"></div>
+            
+            <div id="courseContent" class="panel" style="background: #f8f9fa;"></div>
+
+            <div id="quizContainer"></div>
+
+            <div id="quizResults" class="hidden"></div>
+            
+            <button id="submitQuizBtn" onclick="submitQuiz()" class="btn-success hidden">Submit</button>
+        </div>
+    </div>
+
+    <script src="blockchain-integration.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

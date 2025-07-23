@@ -1,50 +1,62 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+contract SkillToken {
+    string public name = "SkillToken";
+    string public symbol = "SKILL";
+    uint8 public decimals = 18;
+    uint256 public totalSupply;
 
-contract SkillToken is ERC20, Ownable {
-    address public eduPlatform;
-    
-    event EduPlatformSet(address indexed newPlatform);
-    event StudentRewarded(address indexed student, uint256 amount);
-    event TokensSpent(address indexed student, uint256 amount);
-    
-    constructor() ERC20("SkillToken", "SKILL") Ownable(msg.sender) {
-        _mint(msg.sender, 1000000 * 10**decimals()); // 1 million tokens
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Mint(address indexed to, uint256 value);
+
+    constructor() {
+        totalSupply = 0;
     }
-    
-    modifier onlyEduPlatform() {
-        require(msg.sender == eduPlatform, "Only EduPlatform can call this");
-        require(eduPlatform != address(0), "EduPlatform not set");
-        _;
+
+    // Anyone can mint tokens - no restrictions
+    function mint(address to, uint256 value) public {
+        require(to != address(0), "Cannot mint to zero address");
+        require(value > 0, "Cannot mint 0 tokens");
+
+        totalSupply += value;
+        balanceOf[to] += value;
+
+        emit Mint(to, value);
+        emit Transfer(address(0), to, value);
     }
-    
-    function setEduPlatform(address _eduPlatform) external onlyOwner {
-        require(_eduPlatform != address(0), "Invalid address");
-        eduPlatform = _eduPlatform;
-        emit EduPlatformSet(_eduPlatform);
+
+    function transfer(address to, uint256 value) public returns (bool) {
+        require(balanceOf[msg.sender] >= value, "Not enough balance");
+        require(to != address(0), "Cannot transfer to zero address");
+
+        balanceOf[msg.sender] -= value;
+        balanceOf[to] += value;
+
+        emit Transfer(msg.sender, to, value);
+        return true;
     }
-    
-    function rewardStudent(address student, uint256 amount) external onlyEduPlatform {
-        require(student != address(0), "Invalid student address");
-        require(amount > 0, "Amount must be greater than 0");
-        
-        _mint(student, amount * 10**decimals());
-        emit StudentRewarded(student, amount);
+
+    function approve(address spender, uint256 value) public returns (bool) {
+        allowance[msg.sender][spender] = value;
+        emit Approval(msg.sender, spender, value);
+        return true;
     }
-    
-    function spendTokens(address student, uint256 amount) external onlyEduPlatform {
-        require(student != address(0), "Invalid student address");
-        require(amount > 0, "Amount must be greater than 0");
-        require(balanceOf(student) >= amount * 10**decimals(), "Insufficient balance");
-        
-        _burn(student, amount * 10**decimals());
-        emit TokensSpent(student, amount);
-    }
-    
-    function getStudentBalance(address student) external view returns (uint256) {
-        return balanceOf(student) / 10**decimals();
+
+    function transferFrom(address from, address to, uint256 value) public returns (bool) {
+        require(balanceOf[from] >= value, "Not enough balance");
+        require(allowance[from][msg.sender] >= value, "Not enough allowance");
+        require(to != address(0), "Cannot transfer to zero address");
+
+        balanceOf[from] -= value;
+        balanceOf[to] += value;
+        allowance[from][msg.sender] -= value;
+
+        emit Transfer(from, to, value);
+        return true;
     }
 }

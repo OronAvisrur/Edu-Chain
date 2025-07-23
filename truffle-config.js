@@ -47,30 +47,40 @@
 // const HDWalletProvider = require('@truffle/hdwallet-provider');
 
 module.exports = {
+  // Configure networks
   networks: {
+    // Development network for local testing
     development: {
-      host: "127.0.0.1",
-      port: 8545,
-      network_id: "*",
-      gas: 6721975,
+      host: "127.0.0.1",     // Localhost
+      port: 8545,            // Standard Ethereum port
+      network_id: "*",       // Any network (default: none)
+      gas: 6721975,          // Gas limit
       gasPrice: 20000000000, // 20 gwei
     },
+    
+    // Ganache network (if using Ganache GUI)
+    ganache: {
+      host: "127.0.0.1",
+      port: 7545,
+      network_id: "5777",
+    }
   },
 
+  // Set default mocha options here, use special reporters etc.
   mocha: {
     timeout: 100000
   },
 
+  // Configure your compilers
   compilers: {
     solc: {
-      version: "0.8.20",
-      settings: {
+      version: "0.8.19",    // Fetch exact version from solc-bin
+      settings: {          // See the solidity docs for advice about optimization and evmVersion
         optimizer: {
-          enabled: true,
+          enabled: false,
           runs: 200
         },
-        viaIR: true,
-        evmVersion: "paris"
+        evmVersion: "byzantium"
       }
     }
   }
