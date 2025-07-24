@@ -6,28 +6,28 @@ class EduChainBlockchain {
     constructor() {
         // Contract addresses for deployed smart contracts
         this.contracts = {
-            eduChain: '0xeD9c2eCc479006eAB5770bbdAf98385114b85d5E',
-            skillToken: '0x871F37564445953712DaD79d78414A808c1b6463',
-            certificateNFT: '0xE6A85805080c0a9392E361a99C94EccdA73EB391'
+            eduChain: '0x0f1a924e5318a491C43BbE92A5Cb7ef38A8Db949',
+            skillToken: '0xD68B15ef9e733ea0f9290a9C4155db402AadD0f1',
+            certificateNFT: '0xA95b1c6afc3AfD1c605f6c6bdD5bcaE8c8ae0f2c'
         };
 
         // Application state variables
         this.state = {
             // Current user wallet address
-            account: null,       
-            isConnected: false,  
+            account: null,
+            isConnected: false,
             // Web3 instance
-            web3: null,       
+            web3: null,
             // Loaded courses from blockchain  
-            courses: []         
+            courses: []
         };
 
         // Configuration object with contract addresses and ABIs
         this.config = {
             addresses: {
-                eduChain: '0xeD9c2eCc479006eAB5770bbdAf98385114b85d5E',
-                skillToken: '0x871F37564445953712DaD79d78414A808c1b6463',
-                certificateNFT: '0xE6A85805080c0a9392E361a99C94EccdA73EB391'
+                eduChain: '0x0f1a924e5318a491C43BbE92A5Cb7ef38A8Db949',
+                skillToken: '0xD68B15ef9e733ea0f9290a9C4155db402AadD0f1',
+                certificateNFT: '0xA95b1c6afc3AfD1c605f6c6bdD5bcaE8c8ae0f2c'
             },
             abi: {
                 // Main EduChain contract ABI - defines all function signatures
@@ -288,7 +288,7 @@ class EduChainBlockchain {
 
         // Clear existing options
         select.innerHTML = '<option value="">Select Course</option>';
-        
+
         // Add course options
         this.state.courses.forEach(course => {
             const option = document.createElement("option");
@@ -313,7 +313,7 @@ class EduChainBlockchain {
                 .send({ from: this.state.account });
 
             console.log("Course created:", tx.transactionHash);
-            
+
             // Reload courses to update UI
             await this.loadCourses();
             return tx;
@@ -405,7 +405,7 @@ class EduChainBlockchain {
                 .call();
 
             const questions = [];
-            
+
             // Get details for each question
             for (let i = 0; i < questionIds.length; i++) {
                 const questionData = await this.contracts.eduChain.methods
@@ -474,7 +474,7 @@ class EduChainBlockchain {
 
             // Convert from wei to whole tokens
             const tokenBalance = this.state.web3.utils.fromWei(balance, 'ether');
-            return Math.floor(parseFloat(tokenBalance)); 
+            return Math.floor(parseFloat(tokenBalance));
         } catch (error) {
             console.error("Failed to get token balance:", error);
             return 0;

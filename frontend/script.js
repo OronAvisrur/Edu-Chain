@@ -1,9 +1,9 @@
 // Current connected wallet address
-let currentAccount = null;  
+let currentAccount = null;
 // Currently selected course object
-let currentCourse = null;   
+let currentCourse = null;
 // Questions for current course
-let courseQuestions = [];   
+let courseQuestions = [];
 
 // Switch between different panels function
 function showPanel(panel) {
@@ -11,17 +11,17 @@ function showPanel(panel) {
     ['home', 'admin', 'student', 'course'].forEach(p => {
         document.getElementById(p + 'Panel').classList.add('hidden');
     });
-    
+
     // Show requested panel
     document.getElementById(panel + 'Panel').classList.remove('hidden');
 
     // Load data when switching to specific panels
     if (panel === 'admin' && currentAccount) {
-        loadCoursesForAdmin();  
-        loadStatistics();     
+        loadCoursesForAdmin();
+        loadStatistics();
     } else if (panel === 'student' && currentAccount) {
-        loadCourses();       
-        refreshWalletInfo();  
+        loadCourses();
+        refreshWalletInfo();
     }
 }
 
@@ -40,12 +40,12 @@ async function connectWallet() {
 
         // Set current account and update UI
         currentAccount = accounts[0];
-        document.getElementById('walletInfo').innerText = `Connected: ${currentAccount.slice(0,6)}...${currentAccount.slice(-4)}`;
+        document.getElementById('walletInfo').innerText = `Connected: ${currentAccount.slice(0, 6)}...${currentAccount.slice(-4)}`;
 
         // Initialize blockchain integration
         const web3 = new Web3(window.ethereum);
         await window.eduChain.init(web3, currentAccount);
-        
+
         showStatus('createStatus', 'Wallet connected successfully!', 'success');
     } catch (error) {
         showStatus('createStatus', `Connection failed: ${error.message}`, 'error');
@@ -62,7 +62,7 @@ async function createCourse() {
         name: getValue('courseName'),
         category: getValue('courseCategory'),
         difficulty: parseInt(getValue('courseDifficulty')),
-        price: parseInt(getValue('coursePrice')) || 0,       
+        price: parseInt(getValue('coursePrice')) || 0,
         requiredCorrect: parseInt(getValue('requiredCorrect')),
         description: getValue('courseDescription')
     };
@@ -125,23 +125,23 @@ async function addQuestion() {
 // Load and display course statistics for dashboard
 async function loadStatistics() {
     if (!currentAccount) return;
-    
+
     try {
         // Load courses for statistics dropdown
         await window.eduChain.loadCourses();
         const courses = window.eduChain.state.courses;
-        
+
         // Fill course selection dropdown
         const select = document.getElementById('courseStatsSelect');
         select.innerHTML = '<option value="">Select a course to view statistics</option>';
-        
+
         courses.forEach(course => {
             const option = document.createElement('option');
             option.value = course.id;
             option.textContent = `${course.name} (${course.category})`;
             select.appendChild(option);
         });
-        
+
     } catch (error) {
         console.error('Failed to load courses:', error);
     }
@@ -151,29 +151,29 @@ async function loadStatistics() {
 async function showCourseStats() {
     const courseId = document.getElementById('courseStatsSelect').value;
     const display = document.getElementById('courseStatsDisplay');
-    
+
     // Clear display if no course selected
     if (!courseId) {
         display.innerHTML = '';
         return;
     }
-    
+
     try {
         // Get course info from local state
         const course = window.eduChain.state.courses.find(c => c.id == courseId);
-        
+
         // Get course statistics from blockchain
         const courseStats = await window.eduChain.contracts.eduChain.methods.getCourseStats(courseId).call();
-        
+
         // Parse statistics
         const totalEnrolled = parseInt(courseStats.totalEnrolled);
         const totalCompleted = parseInt(courseStats.totalCompleted);
         const failed = totalEnrolled - totalCompleted;
         const passRate = totalEnrolled > 0 ? Math.round((totalCompleted / totalEnrolled) * 100) : 0;
-        
+
         // Get enrolled students list
         const enrolledStudents = courseStats.enrolledStudents;
-        
+
         // Build HTML for statistics display
         let html = `
             <div class="panel" style="margin-top: 1rem;">
@@ -202,7 +202,7 @@ async function showCourseStats() {
                     <h4>Enrolled Students:</h4>
                     <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px;">
         `;
-        
+
         // Add student addresses or empty message
         if (enrolledStudents.length > 0) {
             enrolledStudents.forEach(student => {
@@ -213,15 +213,15 @@ async function showCourseStats() {
         } else {
             html += '<p>No students enrolled yet.</p>';
         }
-        
+
         html += `
                     </div>
                 </div>
             </div>
         `;
-        
+
         display.innerHTML = html;
-        
+
     } catch (error) {
         console.error('Failed to load course stats:', error);
         display.innerHTML = '<div class="error">Failed to load course statistics.</div>';
@@ -236,7 +236,7 @@ async function loadCourses() {
     try {
         // Load courses from blockchain
         await window.eduChain.loadCourses();
-        displayCourses(); 
+        displayCourses();
     } catch (error) {
         document.getElementById('coursesContainer').innerHTML = `<div class="error">Failed to load courses: ${error.message}</div>`;
     }
@@ -258,7 +258,7 @@ function displayCourses() {
         // Determine difficulty styling and text
         const difficultyClass = course.difficulty === 1 ? 'easy' : course.difficulty === 2 ? 'medium' : 'hard';
         const difficultyText = course.difficulty === 1 ? 'Easy' : course.difficulty === 2 ? 'Medium' : 'Hard';
-        
+
         // Build course card HTML
         html += `
             <div class="course-card">
@@ -290,7 +290,7 @@ async function enrollInCourse(courseId) {
         // Call blockchain enrollment function
         await window.eduChain.enrollInCourse(courseId);
         alert('Successfully enrolled!');
-        refreshWalletInfo(); 
+        refreshWalletInfo();
     } catch (error) {
         alert(`Enrollment failed: ${error.message}`);
     }
@@ -322,7 +322,11 @@ async function startCourse(courseId) {
 function displayCourseContent() {
     // Get difficulty text for display
     const difficultyText = currentCourse.difficulty === 1 ? 'Easy' : currentCourse.difficulty === 2 ? 'Medium' : 'Hard';
-    
+
+    // Format description with line breaks
+    const formattedDescription = currentCourse.description
+        .replace(/\n/g, '<br>');
+
     // Update course header
     document.getElementById('courseHeader').innerHTML = `
         <h2>${currentCourse.name}</h2>
@@ -333,7 +337,7 @@ function displayCourseContent() {
     document.getElementById('courseContent').innerHTML = `
         <h3>📖 Learning Materials</h3>
         <div style="background: white; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #007bff;">
-            ${currentCourse.description}
+            ${formattedDescription}
         </div>
         <p><em>Study the materials above, then complete all questions below to earn your certificate!</em></p>
     `;
@@ -344,17 +348,21 @@ function displayCourseContent() {
 // Display quiz questions with multiple choice options
 function displayQuiz() {
     let quizHtml = '<div class="panel"><h3>Quiz Questions</h3>';
-    
+
     // Loop through each question and create HTML
     courseQuestions.forEach((question, index) => {
+        // Format question text
+        const formattedQuestionText = question.questionText
+            .replace(/\n/g, '<br>');
+
         quizHtml += `
             <div class="question-card">
                 <div style="font-weight: bold; margin-bottom: 1rem; color: #333;">
-                    Question ${index + 1}: ${question.questionText}
+                    Question ${index + 1}: ${formattedQuestionText}
                 </div>
                 ${question.options.map((option, optIndex) => `
                     <div class="option">
-                        <label style="display: flex; align-items: center; cursor: pointer;">
+                        <label style="display: flex; align-items: center; cursor: pointer; display: block;">
                             <input type="radio" name="question_${question.id}" value="${optIndex}">
                             <span>${option}</span>
                         </label>
@@ -366,7 +374,7 @@ function displayQuiz() {
 
     quizHtml += '</div>';
     document.getElementById('quizContainer').innerHTML = quizHtml;
-    document.getElementById('submitQuizBtn').classList.remove('hidden'); 
+    document.getElementById('submitQuizBtn').classList.remove('hidden');
 }
 
 // Submit quiz answers to blockchain for grading
@@ -401,18 +409,18 @@ async function submitQuiz() {
     try {
         // Submit answers to blockchain
         await window.eduChain.submitAnswers(questionIds, selectedAnswers);
-        
+
         // Hide quiz and show results
         document.getElementById('quizContainer').classList.add('hidden');
         document.getElementById('submitQuizBtn').classList.add('hidden');
-        
+
         // Display success message with reward information
         document.getElementById('quizResults').innerHTML = `
             <div class="panel success">
                 <h3>🎉 Quiz Completed Successfully!</h3>
                 <p><strong>Rewards you'll receive:</strong></p>
                 <ul>
-                    <li>🪙 SkillTokens for each correct answer (${currentCourse.difficulty * 5} per question)</li>
+                    <li>SkillTokens for each correct answer (${currentCourse.difficulty * 5} per question)</li>
                     <li>50 bonus tokens if you passed the course</li>
                     <li>NFT Certificate if you met the pass requirements</li>
                 </ul>
@@ -441,7 +449,7 @@ async function refreshWalletInfo() {
         // Update balance displays
         document.getElementById('skillTokens').textContent = tokenBalance;
         document.getElementById('nftCertificates').textContent = nftBalance;
-        
+
         // Get completed courses count
         if (window.eduChain.contracts.eduChain) {
             try {
@@ -470,8 +478,8 @@ async function loadCoursesForAdmin() {
 }
 
 // Get trimmed value from form element
-function getValue(id) { 
-    return document.getElementById(id).value.trim(); 
+function getValue(id) {
+    return document.getElementById(id).value.trim();
 }
 
 // Display status message
@@ -485,18 +493,18 @@ function showStatus(elementId, message, type) {
 }
 
 // Clear multiple form fields
-function clearForm(ids) { 
-    ids.forEach(id => { 
-        const el = document.getElementById(id); 
-        if (el) el.value = ''; 
-    }); 
+function clearForm(ids) {
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
 }
 
 // Event Listeners and Initialization
 window.onload = () => {
     // Initialize app on page load
     showPanel('home');
-    
+
     // Check MetaMask installation
     if (typeof window.ethereum === 'undefined') {
         document.getElementById('walletInfo').textContent = 'MetaMask not installed';
@@ -509,7 +517,7 @@ if (window.ethereum) {
         if (accounts.length > 0) {
             // Update current account and display
             currentAccount = accounts[0];
-            document.getElementById('walletInfo').textContent = `Connected: ${currentAccount.slice(0,6)}...${currentAccount.slice(-4)}`;
+            document.getElementById('walletInfo').textContent = `Connected: ${currentAccount.slice(0, 6)}...${currentAccount.slice(-4)}`;
         } else {
             // Handle disconnection
             currentAccount = null;
