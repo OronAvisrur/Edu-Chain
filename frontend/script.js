@@ -1,36 +1,48 @@
-let currentAccount = null; 
-let currentCourse = null; 
-let courseQuestions = [];
+// Current connected wallet address
+let currentAccount = null;  
+// Currently selected course object
+let currentCourse = null;   
+// Questions for current course
+let courseQuestions = [];   
 
-
+// Switch between different panels function
 function showPanel(panel) {
+    // Hide all panels first
     ['home', 'admin', 'student', 'course'].forEach(p => {
         document.getElementById(p + 'Panel').classList.add('hidden');
     });
+    
+    // Show requested panel
     document.getElementById(panel + 'Panel').classList.remove('hidden');
 
+    // Load data when switching to specific panels
     if (panel === 'admin' && currentAccount) {
-        loadCoursesForAdmin();
-        loadStatistics();
+        loadCoursesForAdmin();  
+        loadStatistics();     
     } else if (panel === 'student' && currentAccount) {
-        loadCourses();
-        refreshWalletInfo();
+        loadCourses();       
+        refreshWalletInfo();  
     }
 }
 
+// Connect to MetaMask wallet
 async function connectWallet() {
+    // Check if MetaMask is installed
     if (typeof window.ethereum === 'undefined') {
         alert('Please install MetaMask to use EduChain!');
         return;
     }
 
     try {
+        // Request wallet connection
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         if (accounts.length === 0) throw new Error('No accounts found');
 
+        // Set current account and update UI
         currentAccount = accounts[0];
         document.getElementById('walletInfo').innerText = `Connected: ${currentAccount.slice(0,6)}...${currentAccount.slice(-4)}`;
 
+        // Initialize blockchain integration
         const web3 = new Web3(window.ethereum);
         await window.eduChain.init(web3, currentAccount);
         
@@ -40,19 +52,22 @@ async function connectWallet() {
     }
 }
 
-// Creates new course with specified parameters
+// Create new course with specified parameters
 async function createCourse() {
+    // Check wallet connection first
     if (!currentAccount) { alert('Connect wallet first!'); return; }
 
+    // Collect form data
     const data = {
         name: getValue('courseName'),
         category: getValue('courseCategory'),
         difficulty: parseInt(getValue('courseDifficulty')),
-        price: parseInt(getValue('coursePrice')) || 0,
+        price: parseInt(getValue('coursePrice')) || 0,       
         requiredCorrect: parseInt(getValue('requiredCorrect')),
         description: getValue('courseDescription')
     };
 
+    // Validate required fields
     if (!data.name || !data.category || !data.difficulty || !data.requiredCorrect) {
         showStatus('createStatus', 'Please fill all required fields', 'error');
         return;
@@ -62,22 +77,26 @@ async function createCourse() {
         showStatus('createStatus', 'Creating course... Confirm in MetaMask', 'success');
         await window.eduChain.createCourse(data);
         showStatus('createStatus', 'Course created successfully!', 'success');
+        // Clear form after successful creation
         clearForm(['courseName', 'courseCategory', 'courseDifficulty', 'coursePrice', 'requiredCorrect', 'courseDescription']);
     } catch (error) {
         showStatus('createStatus', `Failed: ${error.message}`, 'error');
     }
 }
 
-// Adds a new question to an existing course
+// Add new question to existing course
 async function addQuestion() {
+    // Check wallet connection
     if (!currentAccount) { alert('Connect wallet first!'); return; }
 
+    // Collect option values and filter out empty ones
     const options = [getValue('option1'), getValue('option2'), getValue('option3'), getValue('option4')].filter(opt => opt);
     if (options.length < 2) {
         showStatus('questionStatus', 'Need at least 2 options', 'error');
         return;
     }
 
+    // Prepare question data
     const data = {
         courseId: parseInt(getValue('questionCourseSelect')),
         questionText: getValue('questionText'),
@@ -86,6 +105,7 @@ async function addQuestion() {
         explanation: getValue('answerExplanation')
     };
 
+    // Validate required fields
     if (!data.courseId || !data.questionText || isNaN(data.correctAnswer)) {
         showStatus('questionStatus', 'Please fill all required fields', 'error');
         return;
@@ -95,21 +115,23 @@ async function addQuestion() {
         showStatus('questionStatus', '⏳ Adding question... Confirm in MetaMask', 'success');
         await window.eduChain.addQuestion(data);
         showStatus('questionStatus', 'Question added successfully!', 'success');
+        // Clear form after successful addition
         clearForm(['questionText', 'option1', 'option2', 'option3', 'option4', 'correctAnswer', 'answerExplanation']);
     } catch (error) {
         showStatus('questionStatus', `Failed: ${error.message}`, 'error');
     }
 }
 
-// Loads and displays course statistics for admin dashboard
+// Load and display course statistics for dashboard
 async function loadStatistics() {
     if (!currentAccount) return;
     
     try {
-        // Load courses for dropdown
+        // Load courses for statistics dropdown
         await window.eduChain.loadCourses();
         const courses = window.eduChain.state.courses;
         
+        // Fill course selection dropdown
         const select = document.getElementById('courseStatsSelect');
         select.innerHTML = '<option value="">Select a course to view statistics</option>';
         
@@ -125,23 +147,25 @@ async function loadStatistics() {
     }
 }
 
-// Fetches and displays available courses for enrollment
+// Display detailed statistics for selected course
 async function showCourseStats() {
     const courseId = document.getElementById('courseStatsSelect').value;
     const display = document.getElementById('courseStatsDisplay');
     
+    // Clear display if no course selected
     if (!courseId) {
         display.innerHTML = '';
         return;
     }
     
     try {
-        // Get course info
+        // Get course info from local state
         const course = window.eduChain.state.courses.find(c => c.id == courseId);
         
-        // Get course stats from contract
+        // Get course statistics from blockchain
         const courseStats = await window.eduChain.contracts.eduChain.methods.getCourseStats(courseId).call();
         
+        // Parse statistics
         const totalEnrolled = parseInt(courseStats.totalEnrolled);
         const totalCompleted = parseInt(courseStats.totalCompleted);
         const failed = totalEnrolled - totalCompleted;
@@ -150,6 +174,7 @@ async function showCourseStats() {
         // Get enrolled students list
         const enrolledStudents = courseStats.enrolledStudents;
         
+        // Build HTML for statistics display
         let html = `
             <div class="panel" style="margin-top: 1rem;">
                 <h3>${course.name}</h3>
@@ -178,6 +203,7 @@ async function showCourseStats() {
                     <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px;">
         `;
         
+        // Add student addresses or empty message
         if (enrolledStudents.length > 0) {
             enrolledStudents.forEach(student => {
                 html += `<div style="margin: 0.5rem 0; padding: 0.5rem; background: white; border-radius: 3px;">
@@ -202,22 +228,26 @@ async function showCourseStats() {
     }
 }
 
-// Student Functions
+// Student function: Load all available courses from blockchain
 async function loadCourses() {
+    // Check wallet connection
     if (!currentAccount) { alert('Connect wallet first!'); return; }
 
     try {
+        // Load courses from blockchain
         await window.eduChain.loadCourses();
-        displayCourses();
+        displayCourses(); 
     } catch (error) {
         document.getElementById('coursesContainer').innerHTML = `<div class="error">Failed to load courses: ${error.message}</div>`;
     }
 }
 
+// Display courses in UI with enrollment options
 function displayCourses() {
     const courses = window.eduChain.state.courses;
     const container = document.getElementById('coursesContainer');
 
+    // Show message if no courses available
     if (courses.length === 0) {
         container.innerHTML = '<p>No courses available yet. Check back later! 📚</p>';
         return;
@@ -225,9 +255,11 @@ function displayCourses() {
 
     let html = '';
     courses.forEach(course => {
+        // Determine difficulty styling and text
         const difficultyClass = course.difficulty === 1 ? 'easy' : course.difficulty === 2 ? 'medium' : 'hard';
         const difficultyText = course.difficulty === 1 ? 'Easy' : course.difficulty === 2 ? 'Medium' : 'Hard';
         
+        // Build course card HTML
         html += `
             <div class="course-card">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
@@ -249,28 +281,36 @@ function displayCourses() {
     container.innerHTML = html;
 }
 
+// Enroll in selected course
 async function enrollInCourse(courseId) {
+    // Check wallet connection
     if (!currentAccount) { alert('Connect wallet first!'); return; }
 
     try {
+        // Call blockchain enrollment function
         await window.eduChain.enrollInCourse(courseId);
         alert('Successfully enrolled!');
-        refreshWalletInfo();
+        refreshWalletInfo(); 
     } catch (error) {
         alert(`Enrollment failed: ${error.message}`);
     }
 }
 
+// Start taking a course
 async function startCourse(courseId) {
+    // Check wallet connection
     if (!currentAccount) { alert('Connect wallet first!'); return; }
 
     try {
+        // Find course in loaded data
         currentCourse = window.eduChain.state.courses.find(c => c.id === courseId);
         if (!currentCourse) { alert('Course not found'); return; }
 
+        // Load questions for this course
         courseQuestions = await window.eduChain.getCourseQuestions(courseId);
         if (courseQuestions.length === 0) { alert('This course has no questions yet.'); return; }
 
+        // Switch to course panel and display content
         showPanel('course');
         displayCourseContent();
     } catch (error) {
@@ -278,14 +318,18 @@ async function startCourse(courseId) {
     }
 }
 
+// Display course content and materials
 function displayCourseContent() {
+    // Get difficulty text for display
     const difficultyText = currentCourse.difficulty === 1 ? 'Easy' : currentCourse.difficulty === 2 ? 'Medium' : 'Hard';
     
+    // Update course header
     document.getElementById('courseHeader').innerHTML = `
         <h2>${currentCourse.name}</h2>
         <p><strong>Category:</strong> ${currentCourse.category} | <strong>Difficulty:</strong> ${difficultyText} | <strong>Questions:</strong> ${courseQuestions.length}</p>
     `;
 
+    // Display learning materials
     document.getElementById('courseContent').innerHTML = `
         <h3>📖 Learning Materials</h3>
         <div style="background: white; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #007bff;">
@@ -297,9 +341,11 @@ function displayCourseContent() {
     displayQuiz();
 }
 
+// Display quiz questions with multiple choice options
 function displayQuiz() {
     let quizHtml = '<div class="panel"><h3>Quiz Questions</h3>';
     
+    // Loop through each question and create HTML
     courseQuestions.forEach((question, index) => {
         quizHtml += `
             <div class="question-card">
@@ -320,10 +366,12 @@ function displayQuiz() {
 
     quizHtml += '</div>';
     document.getElementById('quizContainer').innerHTML = quizHtml;
-    document.getElementById('submitQuizBtn').classList.remove('hidden');
+    document.getElementById('submitQuizBtn').classList.remove('hidden'); 
 }
 
+// Submit quiz answers to blockchain for grading
 async function submitQuiz() {
+    // Validate state
     if (!currentAccount || !currentCourse || courseQuestions.length === 0) {
         alert('Invalid state. Please refresh and try again.');
         return;
@@ -333,6 +381,7 @@ async function submitQuiz() {
     const selectedAnswers = [];
     let allAnswered = true;
 
+    // Collect answers from form
     courseQuestions.forEach(question => {
         const selectedOption = document.querySelector(`input[name="question_${question.id}"]:checked`);
         if (!selectedOption) {
@@ -343,27 +392,31 @@ async function submitQuiz() {
         selectedAnswers.push(parseInt(selectedOption.value));
     });
 
+    // Check if all questions are answered
     if (!allAnswered) {
         alert('Please answer all questions before submitting.');
         return;
     }
 
     try {
+        // Submit answers to blockchain
         await window.eduChain.submitAnswers(questionIds, selectedAnswers);
         
+        // Hide quiz and show results
         document.getElementById('quizContainer').classList.add('hidden');
         document.getElementById('submitQuizBtn').classList.add('hidden');
         
+        // Display success message with reward information
         document.getElementById('quizResults').innerHTML = `
             <div class="panel success">
                 <h3>🎉 Quiz Completed Successfully!</h3>
                 <p><strong>Rewards you'll receive:</strong></p>
                 <ul>
                     <li>🪙 SkillTokens for each correct answer (${currentCourse.difficulty * 5} per question)</li>
-                    <li>🎁 50 bonus tokens if you passed the course</li>
-                    <li>🏆 NFT Certificate if you met the pass requirements</li>
+                    <li>50 bonus tokens if you passed the course</li>
+                    <li>NFT Certificate if you met the pass requirements</li>
                 </ul>
-                <p><em>💰 Check your wallet to see your rewards!</em></p>
+                <p><em>Check your wallet to see your rewards!</em></p>
                 <button onclick="refreshWalletInfo(); showPanel('student');" class="btn-primary">View My Dashboard</button>
             </div>
         `;
@@ -374,15 +427,18 @@ async function submitQuiz() {
     }
 }
 
+// Update wallet information display
 async function refreshWalletInfo() {
     if (!currentAccount) return;
 
     try {
+        // Get token and NFT balances in parallel
         const [tokenBalance, nftBalance] = await Promise.all([
             window.eduChain.getSkillTokenBalance(),
             window.eduChain.getNFTBalance()
         ]);
 
+        // Update balance displays
         document.getElementById('skillTokens').textContent = tokenBalance;
         document.getElementById('nftCertificates').textContent = nftBalance;
         
@@ -392,6 +448,7 @@ async function refreshWalletInfo() {
                 const studentStats = await window.eduChain.contracts.eduChain.methods.getStudentStats(currentAccount).call();
                 document.getElementById('coursesCompleted').textContent = studentStats.totalCoursesCompleted;
             } catch (e) {
+                // If getStudentStats doesn't exist, default to 0
                 document.getElementById('coursesCompleted').textContent = '0';
             }
         }
@@ -403,6 +460,7 @@ async function refreshWalletInfo() {
     }
 }
 
+// Load courses for admin panel
 async function loadCoursesForAdmin() {
     try {
         await window.eduChain.loadCourses();
@@ -411,31 +469,49 @@ async function loadCoursesForAdmin() {
     }
 }
 
-// Utility Functions
-function getValue(id) { return document.getElementById(id).value.trim(); }
+// Get trimmed value from form element
+function getValue(id) { 
+    return document.getElementById(id).value.trim(); 
+}
+
+// Display status message
 function showStatus(elementId, message, type) {
     const element = document.getElementById(elementId);
     if (element) {
         element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        // dissapear after 5 seconds
         setTimeout(() => element.innerHTML = '', 5000);
     }
 }
-function clearForm(ids) { ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); }
 
-// Event Listeners
+// Clear multiple form fields
+function clearForm(ids) { 
+    ids.forEach(id => { 
+        const el = document.getElementById(id); 
+        if (el) el.value = ''; 
+    }); 
+}
+
+// Event Listeners and Initialization
 window.onload = () => {
+    // Initialize app on page load
     showPanel('home');
+    
+    // Check MetaMask installation
     if (typeof window.ethereum === 'undefined') {
         document.getElementById('walletInfo').textContent = 'MetaMask not installed';
     }
 };
 
+// Listen for MetaMask account changes
 if (window.ethereum) {
     window.ethereum.on('accountsChanged', (accounts) => {
         if (accounts.length > 0) {
+            // Update current account and display
             currentAccount = accounts[0];
             document.getElementById('walletInfo').textContent = `Connected: ${currentAccount.slice(0,6)}...${currentAccount.slice(-4)}`;
         } else {
+            // Handle disconnection
             currentAccount = null;
             document.getElementById('walletInfo').textContent = 'Not connected';
         }
